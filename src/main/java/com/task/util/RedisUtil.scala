@@ -1,5 +1,6 @@
 package com.task.util
-import redis.clients.jedis.{JedisCluster, HostAndPort}
+import redis.clients.jedis.{HostAndPort, JedisCluster, JedisPoolConfig}
+
 import scala.collection.JavaConversions._
 import com.task.util.RedisUtil.clients
 /**
@@ -116,8 +117,21 @@ object RedisUtil {
 
   private val jedisClusterNodes = new java.util.HashSet[HostAndPort]()
   jedisClusterNodes.add(new HostAndPort("",6379))
-
-
-  val clients = new JedisCluster(jedisClusterNodes)
+  private val properties = PropertiesUtils.apply()
+  properties.getProperty("")
+  private val addr = properties.getProperty("redis.addr")
+  private val port = properties.getProperty("redis.port").toInt
+  private val auth = properties.getProperty("redis.auth")
+  private val maxIdle = properties.getProperty("redis.maxIdle").toInt
+  private val maxActive = properties.getProperty("redis.maxActive").toInt
+  private val maxWait = properties.getProperty("redis.maxWait").toInt
+  private val timeOut = properties.getProperty("redis.timeOut").toInt
+  private val testOnBorrow = properties.getProperty("redis.testOnBorrow")
+  val config = new JedisPoolConfig
+  config.setMaxTotal(maxActive)
+  config.setMaxIdle(maxIdle)
+  config.setMaxWaitMillis(maxWait)
+  //config.setTestOnBorrow(testOnBorrow)
+  val clients = new JedisCluster(jedisClusterNodes,config)
 
 }
