@@ -136,6 +136,12 @@
             <version>3.8.0</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -240,4 +246,43 @@
 
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>test</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <!-- redis -->
+                <redis.addr></redis.addr>
+                <redis.port>6079</redis.port>
+                <redis.auth>Redis-123</redis.auth>
+                <redis.maxIdle>200</redis.maxIdle>
+                <redis.maxActive>1024</redis.maxActive>
+                <redis.maxWait>10000</redis.maxWait>
+                <redis.timeOut>10000</redis.timeOut>
+                <redis.testOnBorrow>true</redis.testOnBorrow>
+
+                <!-- timer -->
+                <timer.encode>UTF-8</timer.encode>
+                <timer.core.pool.size>10</timer.core.pool.size>
+                <timer.token>BB47501E646085AB96767DA1A74D51493BE19106073D152157280551DB6B1AAF</timer.token>
+                <timer.period>1</timer.period>
+                <timer.groove.number>10</timer.groove.number>
+                <timer.initial.delay>0</timer.initial.delay>
+                <timer.lock.out.time>10</timer.lock.out.time>
+                <timer.ring.core.pool.size>10</timer.ring.core.pool.size>
+                <timer.channel>hashed-wheel-pointer-key-2</timer.channel>
+                <timer.channel.tmp>hashed-wheel-tmp-2</timer.channel.tmp>
+                <timer.key.prefix>hashed-wheel-key-prefix-</timer.key.prefix>
+                <timer.lock.key>hashed-wheel-lock-key</timer.lock.key>
+                <timer.pointer>hashed-wheel-pointer-address</timer.pointer>
+                <timer.hashed.wheel.producer.task>hashed-wheel-producer-task</timer.hashed.wheel.producer.task>
+                <!--<timer.hashed.wheel.producer.task>hashed-wheel-producer-task</timer.hashed.wheel.producer.task>-->
+                <timer.hashed.wheel.producer.task.tmp>hashed-wheel-producer-task-tmp</timer.hashed.wheel.producer.task.tmp>
+                <timer.hashed.wheel.log.prefix>hashed-wheel-log-prefix</timer.hashed.wheel.log.prefix>
+                <timer.result.code.name>ret</timer.result.code.name>
+            </properties>
+        </profile>
+    </profiles>
 </project>
