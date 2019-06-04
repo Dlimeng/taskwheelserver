@@ -11,6 +11,7 @@
         <spark.version>2.1.1</spark.version>
         <hadoop.version>2.7.3</hadoop.version>
         <scala.compat.version>2.11</scala.compat.version>
+        <akka.version>2.4.17</akka.version>
     </properties>
 
     <groupId>com.task</groupId>
@@ -24,6 +25,21 @@
             <version>${scala.version}</version>
             <scope>compile</scope>
         </dependency>
+
+        <!-- 添加akka的actor依赖 -->
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-actor_${scala.compat.version}</artifactId>
+            <version>${akka.version}</version>
+        </dependency>
+
+        <!-- 多进程之间的Actor通信 -->
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-remote_${scala.compat.version}</artifactId>
+            <version>${akka.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.typesafe.scala-logging</groupId>
             <artifactId>scala-logging_2.11</artifactId>
@@ -44,9 +60,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.8</version>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-jackson_2.10</artifactId>
+            <version>3.2.10</version>
         </dependency>
 
         <dependency>
@@ -65,7 +81,6 @@
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
             <version>2.9.0</version>
-            <type>jar</type>
         </dependency>
 
         <dependency>
@@ -140,6 +155,12 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.2.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
         </dependency>
 
     </dependencies>
@@ -254,7 +275,7 @@
             </activation>
             <properties>
                 <!-- redis -->
-                <redis.addr></redis.addr>
+                <redis.addr>39.98.233.172</redis.addr>
                 <redis.port>6079</redis.port>
                 <redis.auth>Redis-123</redis.auth>
                 <redis.maxIdle>200</redis.maxIdle>

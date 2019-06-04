@@ -1,18 +1,18 @@
-package com.task.util
-import java.util.logging.Logger
+package com.task.util.redis
 
-import redis.clients.jedis._
+import com.task.util.redis.RedisUtil.jedisPool
+import com.task.util.{PropertiesUtils, RandomGUIDUtils}
+import com.typesafe.scalalogging._
+import redis.clients.jedis.{JedisPool, _}
 
 import scala.collection.JavaConversions._
-import com.task.util.RedisUtil.clients
-import org.apache.commons.lang.StringUtils
-import com.typesafe.scalalogging._
 /**
   * @author limeng
   * @date 2019/5/30 23:54
   * @version 1.0
   */
 class RedisUtil  extends LazyLogging with Serializable{
+  lazy val clients = jedisPool.getResource
 
   val TimeoutSec = 5
 
@@ -21,8 +21,8 @@ class RedisUtil  extends LazyLogging with Serializable{
   val ONEHOUR: Int = 60 * 60 * 1
 
   private val LOCK_SUCCESS = "OK"
-  private val SET_IF_NOT_EXIST = "NX"
-  private val SET_WITH_EXPIRE_TIME = "PX"
+  private val SET_IF_NOT_EXIST:String = "NX"
+  private val SET_WITH_EXPIRE_TIME:String = "PX"
 
 
   /**
@@ -33,9 +33,7 @@ class RedisUtil  extends LazyLogging with Serializable{
     */
 
   def set(key:String,value:Any): Unit ={
-
     clients.set(key,String.valueOf(value))
-
   }
 
   /**
@@ -45,10 +43,8 @@ class RedisUtil  extends LazyLogging with Serializable{
     * @return
     */
 
-  def hget(key:String,time:Long): Option[String] ={
-
-    val value=clients.hget(key,String.valueOf(time))
-    Option(value)
+  def hget(key:String,time:Long): String ={
+    clients.hget(key,String.valueOf(time))
   }
 
   /**
@@ -74,16 +70,18 @@ class RedisUtil  extends LazyLogging with Serializable{
 
   }
 
+  def del(key:String): Long ={
+    clients.del(key)
+  }
+
   /**
     *
     * @param key
     * @param time
     * @return
     */
-  def hdel(key:String,time:Any): Option[Long] ={
-
-    Some(clients.hdel(key,String.valueOf(time)))
-
+  def hdel(key:String,time:Any): Long ={
+    clients.hdel(key,String.valueOf(time))
   }
 
   /**
@@ -92,10 +90,8 @@ class RedisUtil  extends LazyLogging with Serializable{
     * @param times
     * @return
     */
-  def rpush(key:String,times:Any): Option[Long] ={
-
-    Some(clients.rpush(key,String.valueOf(times)))
-
+  def rpush(key:String,times:Any): Long ={
+    clients.rpush(key,String.valueOf(times))
   }
 
 
@@ -104,13 +100,13 @@ class RedisUtil  extends LazyLogging with Serializable{
     * @param key
     * @return
     */
-  def lpop(key:String): Option[Long] ={
+  def lpop(key:String): String ={
 
     val time=clients.lpop(key)
     if(time==null)
-      None
+      null
     else
-      Some(time.toLong)
+      time
   }
 
 
@@ -119,37 +115,36 @@ class RedisUtil  extends LazyLogging with Serializable{
     * @param key
     * @return
     */
-  def lhead(key:String): Option[Long] ={
-
+  def lhead(key:String): String ={
     val head=clients.lindex(key,0)
     if(head==null)
-      None
+      null
     else
-      Some(head.toLong)
+      head
   }
 
   //----------------------------------------------------分布式锁----------------------------------------------------------//
   /**
     * 尝试获取分布式锁
     *
-    * @param jedis      Redis客户端
     * @param lockKey    锁
-    * @param requestId  请求标识
     * @param expireTime 超期时间
     * @return 是否获取成功
     */
-  def tryGetDistributedLock(jedis: Nothing, lockKey: String, requestId: String, expireTime: Int): Boolean = {
-    val result = clients.set(lockKey, requestId, SET_IF_NOT_EXIST, SET_WITH_EXPIRE_TIME, expireTime)
+  def tryGetDistributedLock(lockKey: String, expireTime: Int): Boolean = {
+    val uuid:String = new RandomGUIDUtils().toString
+    val time:Long=expireTime.toLong
+    val result:String = clients.set(lockKey, uuid, SET_IF_NOT_EXIST, SET_WITH_EXPIRE_TIME, time)
     LOCK_SUCCESS == result
   }
 
 
-  def lockSetFlag(key: String,  timeoutSec: Int): Boolean = {
+  def lockSetFlag(key: String,timeoutSec: Int): Boolean = {
     var result = false
-    if (StringUtils.isNotBlank(key) && clients != null && timeoutSec > 0) {
-      val timeout = String.valueOf(getTimeStamp(timeoutSec))
-      val setResult = clients.setnx(key, timeout)
-      if (setResult > 0) result = true
+    if (key.nonEmpty  && timeoutSec > 0) {
+      val timeout = getTimeStamp(timeoutSec).toString
+      val setResult = tryGetDistributedLock(key,timeoutSec)
+      if (setResult) result = true
       else {
         val isTimeout = firstCheckTimeout(key)
         if (isTimeout) {
@@ -161,7 +156,7 @@ class RedisUtil  extends LazyLogging with Serializable{
     result
   }
 
-  def multiLockSetFlag(key: String, jedis: Nothing, timeoutSec: Int): Boolean = {
+  def multiLockSetFlag(key: String,timeoutSec: Int): Boolean = {
     var result = false
     val cur = System.currentTimeMillis
     var maxTime = 3
@@ -182,47 +177,45 @@ class RedisUtil  extends LazyLogging with Serializable{
     result
   }
 
-  def reLockSetFlag(key: String, jedis: Nothing): Unit = {
-    if (StringUtils.isNotBlank(key) && jedis != null) clients.del(key)
+  def reLockSetFlag(key: String): Unit = {
+    if (key.nonEmpty) clients.del(key)
   }
 
-  def getLockValue(key: String, jedis: Nothing): String = {
-    var value:String = null
-    if (StringUtils.isNotBlank(key) && jedis != null) {
-      value = clients.get(key)
-    }
-    value
+  def getLockValue(key: String): String = {
+    clients.get(key)
   }
 
-  private def getTimeStamp(incSec: Int) = {
-    val current = System.currentTimeMillis / 1000 + incSec
-    current
+  private def getTimeStamp(incSec: Int):Long= {
+     System.currentTimeMillis / 1000 + incSec
   }
 
-  private def hasTimeout(timestamp: Long) = (System.currentTimeMillis / 1000) > timestamp
+  private def hasTimeout(timestamp: Long):Boolean = (System.currentTimeMillis / 1000) > timestamp
 
-  private def firstCheckTimeout(key: String) = {
+  private def firstCheckTimeout(key: String):Boolean = {
     var timeout = true
-    if (StringUtils.isNotBlank(key) && clients != null) {
+    if (key.nonEmpty) {
       var newTimeStamp:Long = 0
       val newTimeout = clients.get(key)
-      if (StringUtils.isNotBlank(newTimeout)) try
-        newTimeStamp = newTimeout.toLong
-      catch {
-        case e: NumberFormatException =>
-          logger.error(e.getMessage, e)
+      if (newTimeout.nonEmpty){
+        try
+          newTimeStamp = newTimeout.toLong
+        catch {
+          case e: NumberFormatException =>
+            logger.error(e.getMessage, e)
+        }
       }
       timeout = hasTimeout(newTimeStamp)
     }
     timeout
   }
 
-  private def reCheckTimeout(key: String, timeoutSec: Int) = {
+  private def reCheckTimeout(key: String, timeoutSec: Int):Boolean = {
     var timeout = true
-    if (StringUtils.isNotBlank(key) && clients != null) {
+    if (key.nonEmpty) {
       var newTimeStamp:Long = 0
-      val newTimeout = clients.getSet(key, String.valueOf(getTimeStamp(timeoutSec)))
-      if (StringUtils.isNotBlank(newTimeout)) {
+
+      val newTimeout =clients.getSet(key, getTimeStamp(timeoutSec).toString)
+      if (newTimeout.nonEmpty) {
         try
           newTimeStamp = newTimeout.toLong
         catch {
@@ -237,8 +230,8 @@ class RedisUtil  extends LazyLogging with Serializable{
 }
 
 object RedisUtil {
-  private val jedisClusterNodes = new java.util.HashSet[HostAndPort]()
-  private val properties = PropertiesUtils.apply("redis.properties")
+
+  private val properties = PropertiesUtils.apply("/redis.properties")
   private val addr = properties.getProperty("redis.addr")
   private val port = properties.getProperty("redis.port").toInt
   private val auth = properties.getProperty("redis.auth")
@@ -248,10 +241,10 @@ object RedisUtil {
   private val timeOut = properties.getProperty("redis.timeOut").toInt
   private val testOnBorrow = properties.getProperty("redis.testOnBorrow").toBoolean
   val config = new JedisPoolConfig
+
   config.setMaxTotal(maxActive)
   config.setMaxIdle(maxIdle)
   config.setMaxWaitMillis(maxWait)
   config.setTestOnBorrow(testOnBorrow)
-  val clients = new JedisCluster(jedisClusterNodes,config)
-
+  val jedisPool = new  JedisPool(config, addr, port, maxWait, auth)
 }
