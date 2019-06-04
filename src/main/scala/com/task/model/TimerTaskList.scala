@@ -2,19 +2,23 @@ package com.task.model
 
 import java.util.concurrent.TimeUnit
 
+import com.typesafe.scalalogging.LazyLogging
+
 
 /**
   * @author limeng
   * @date 2019/5/30 18:57
   * @version 1.0
   */
-object TimerTaskList {
+object TimerTaskList extends LazyLogging{
 
 
 
 
 }
-case class TimerTaskConfig()
+case class TimerTaskConfig(corePoolSize:Int,encode:String,token:String,testIp:String,channel:String
+                          ,channelTmp:String,grooveNumber:Int,keyPrefix:String,ringCorePoolSize:String,initialDelay:Int,
+                           lockKey:String,pointer:String,period:Int,lockOutTime:Int)
 /**
   * 任务
   * @param id 任务唯一id
