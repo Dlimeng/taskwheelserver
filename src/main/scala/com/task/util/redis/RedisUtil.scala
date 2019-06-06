@@ -109,6 +109,9 @@ class RedisUtil  extends LazyLogging with Serializable{
       time
   }
 
+  def rpop(key:String):String={
+    clients.rpop(key)
+  }
 
   /**
     *

@@ -16,9 +16,7 @@ object TimerTaskList extends LazyLogging{
 
 
 }
-case class TimerTaskConfig(corePoolSize:Int,encode:String,token:String,testIp:String,channel:String
-                          ,channelTmp:String,grooveNumber:Int,keyPrefix:String,ringCorePoolSize:String,initialDelay:Int,
-                           lockKey:String,pointer:String,period:Int,lockOutTime:Int)
+
 /**
   * 任务
   * @param id 任务唯一id
