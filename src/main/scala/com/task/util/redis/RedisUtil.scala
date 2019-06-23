@@ -32,10 +32,13 @@ class RedisUtil  extends LazyLogging with Serializable{
     * @return
     */
 
-  def set(key:String,value:Any): Unit ={
+  def set(key:String,value:Any): String ={
     clients.set(key,String.valueOf(value))
   }
 
+  def get(key:String): String ={
+    clients.get(key)
+  }
   /**
     *
     * @param key
@@ -94,7 +97,9 @@ class RedisUtil  extends LazyLogging with Serializable{
     clients.rpush(key,String.valueOf(times))
   }
 
-
+  def lpush(key: String, strings: Any): Long ={
+    clients.lpush(key,String.valueOf(strings))
+  }
   /**
     *
     * @param key
